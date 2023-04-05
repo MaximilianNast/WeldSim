@@ -13,9 +13,5 @@ layer, use the coefficients stored in "single_layer_height.csv" and plug them in
 If you want to calculate the height of multiple layers, you may use the `calculate_layer_height` function as shown in the
 `__main__` method.
 
-# Krinke_model_reduced:
-The reduced model is marginally reduced in performance but requires only 9 coefficients and includes a training
-function.
-
 # Rios_model:
 A physics based model, proposed by Rios et. al in https://www.sciencedirect.com/science/article/pii/S2214860417303470
