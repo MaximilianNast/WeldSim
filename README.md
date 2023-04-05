@@ -5,7 +5,13 @@ as an in-code comparison of the results.
 
 # Krinke_model_full:
 The main model as proposed by Stefan Krinke, M. Sc. in the paper mentioned above. The models equation requires 24
-coefficients. This model does not contain a training function.
+coefficients. This model does not contain a training function. <br>
+The "krinke_model_coefficients" directiory contains
+the coefficients found after training the model on "output.xlsx". If you want to e.g. calculate the height of a single 
+layer, use the coefficients stored in "single_layer_height.csv" and plug them into the equation defined in the 
+`evaluate` function. <br>
+If you want to calculate the height of multiple layers, you may use the `calculate_layer_height` function as shown in the
+`__main__` method.
 
 # Krinke_model_reduced:
 The reduced model is marginally reduced in performance but requires only 9 coefficients and includes a training
