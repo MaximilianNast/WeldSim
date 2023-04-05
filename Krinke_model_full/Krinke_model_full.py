@@ -1,14 +1,13 @@
 import pandas as pd
-import csv
 
 # Read the coefficients from the included csv files
 COEFFICIENTS_K = pd.read_csv("krinke_model_coefficients/k_ratio_new.csv", index_col=0, skipinitialspace=True)
 COEFFICIENTS_H = pd.read_csv("krinke_model_coefficients/single_layer_height.csv", index_col=0, skipinitialspace=True)
 
 
-# Function to search for a specific coefficient
 def s(coefficients, rowname, colname):
     """
+    Function to search for a specific coefficient in a pandas dataframe.
     :param coefficients: pd.Dataframe, containing the coefficients to search over
     :param rowname: string, the name of the column
     :param colname: string, the name of the column
@@ -19,8 +18,17 @@ def s(coefficients, rowname, colname):
     return value
 
 
-# Function to calculate a single output of the model
-def calculate_model_output(coefficients, alpha, beta, vf):
+def evaluate(coefficients, alpha, beta, vf):
+    """
+    Function to evaluate the Krinke equation. Depending on the coefficients you input, you can calculate, for example,
+    the height of a single layer or coefficient used when determining the layer height for multiple layers as discussed
+    in the paper.
+    :param coefficients: pd.Dataframe, containing the coefficients to search over
+    :param alpha: float, alpha angle, see paper for explanation
+    :param beta: float, beta angle
+    :param vf: float, the welding speed in mm/min
+    :return: float, the output value of the Krinke equation based on the coefficients
+    """
     c = coefficients
 
     output = (
@@ -39,9 +47,18 @@ def calculate_model_output(coefficients, alpha, beta, vf):
     return output
 
 
-def calculate_layer_height(number_of_layers, alpha, beta, vf):
-    k_ratios = calculate_model_output(COEFFICIENTS_K, alpha, beta, vf)
-    h_single = calculate_model_output(COEFFICIENTS_H, alpha, beta, vf)
+def calculate_multi_layer_height(number_of_layers, alpha, beta, vf):
+    """
+    Function to calculate the height of multiple layers by combining the model outputs of single layer heights with the
+    coefficients.
+    :param number_of_layers: int, the number of layers
+    :param alpha: float, alpha angle, see paper for explanation
+    :param beta: float, beta angle
+    :param vf: float, the welding speed in mm/min
+    :return: float, the estimated height of the specified number of layers
+    """
+    k_ratios = evaluate(COEFFICIENTS_K, alpha, beta, vf)
+    h_single = evaluate(COEFFICIENTS_H, alpha, beta, vf)
 
     if number_of_layers == 0:
         return k_ratios
@@ -50,4 +67,8 @@ def calculate_layer_height(number_of_layers, alpha, beta, vf):
 
 
 if __name__ == "__main__":
-    print(calculate_layer_height(1, 90, 55, 300))
+    layers, alpha, beta, speed = 3, 90, 55, 300
+    result = calculate_multi_layer_height(layers, alpha, beta, speed)
+    print("When welding at {}mm/min in the position alpha={}°, beta={}°, the estimated height of {} layer(s) is {}mm."
+          .format(speed, alpha, beta, layers, result)
+          )
