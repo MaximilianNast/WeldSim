@@ -3,54 +3,22 @@ import pandas as pd
 import scipy.optimize
 import matplotlib.pyplot as plt
 import string
-
-
-def read_training_data(filename, train_to_predict):
-    """
-    Reads the training data from the output.xlsx file.
-    :param filename: string, the location of the file containing the training data
-    :param train_to_predict: string, which z data to read from the training set
-    :return:
-    """
-    # read training data from the excel file into a pd dataframe
-    df = pd.read_excel(filename)
-
-    # get a grid of the x and y values from the training data
-    x_idx    = np.linspace(1, 13, 13)
-    x_val    = list(zip(list(df["α [°]"]), list(df["β [°]"])))
-    x_val    = [x for i, x in enumerate(x_val) if x not in x_val[:i]]
-    y        = list(df["vf [mm/min]"].unique())
-
-    # loop over the grid of x and y values and find the corresponding z values in the training data
-    z_ratio, z_singleheight, z_doubleheight = [], [], []
-    for [alpha, beta] in x_val:
-        for speed in y:
-            selected_row = df[(df['α [°]'] == alpha) & (df['β [°]'] == beta) & (df['vf [mm/min]'] == speed)]
-            z_ratio.append(list(selected_row['Verhältnis [-]'])[0])
-            z_singleheight.append(list(selected_row['höhe einf. [mm]'])[0])
-            z_doubleheight.append(list(selected_row['höhe dopp. [mm]'])[0])
-
-    # based on the train_to_predict parameter, determine which which z data to read from the training set
-    if train_to_predict == "k_ratios":
-        Z = np.array(z_ratio).reshape(13, 8).T
-    elif train_to_predict == "single_heights":
-        Z = np.array(z_singleheight).reshape(13, 8).T
-    elif train_to_predict == "double_heights":
-        Z = np.array(z_doubleheight).reshape(13, 8).T
-    else:
-        raise ValueError("Invalid value for train_to_predict")
-
-    return x_idx, y, Z
+from read_training_data import*
 
 
 def train(training_data_file, train_to_predict, omit_training_data_indices=[]):
+    """
+    Function that trains the model on the training data. You can omit training data, i.e. for validation.
+    :param training_data_file:
+    :param train_to_predict:
+    :param omit_training_data_indices:
+    :return:
+    """
 
     x, y, Z = read_training_data(training_data_file, train_to_predict)
     X, Y = np.meshgrid(x, y)
 
-    x_flat = X.flatten()
-    y_flat = Y.flatten()
-    z_flat = Z.flatten()
+    x_flat, y_flat, z_flat = X.flatten(), Y.flatten(), Z.flatten()
 
     xyz_points = np.column_stack((x_flat, y_flat, z_flat))
 
@@ -101,7 +69,11 @@ def denormalize_data(norm_data, min_val, max_val):
     return norm_data * (max_val - min_val) + min_val
 
 
-def evaluate(alpha_beta_combination, speed, coefficient_file, min_max_file):
+def normalize_alpha_beta(alpha, beta, min_val, max_val):
+    ab_comb = [[90, 55, 1], [90, 45, 2], [90, 30, 3], [90, 45,]]
+
+
+def evaluate(alpha_beta_combination, alpha, beta, speed, coefficient_file, min_max_file):
     """
     Evaluates a single model output for a given combination of alpha, beta, and welding speed based on the input
     coefficient file and min_max file.
@@ -118,6 +90,8 @@ def evaluate(alpha_beta_combination, speed, coefficient_file, min_max_file):
 
     # normalize x,y input data
     x = normalize_data(alpha_beta_combination, x_min, x_max)
+    print(x)
+    print(normalize_alpha_beta(alpha, beta, x_min, x_max))
     y = normalize_data(speed, y_min, y_max)
 
     # evaluate model output
@@ -129,11 +103,12 @@ def evaluate(alpha_beta_combination, speed, coefficient_file, min_max_file):
     return output_norm
 
 
-def calculate_multi_layer_height(number_of_layers, alpha_beta_combination, vf):
+def calculate_multi_layer_height(number_of_layers, alpha_beta_combination, alpha, beta, vf):
     """
     Function to calculate the height of multiple layers by combining the model outputs of single layer heights with the
     coefficients.
     :param number_of_layers: int, the number of layers
+    :param alpha_beta_combination:
     :param alpha: float, alpha angle, see paper for explanation
     :param beta: float, beta angle
     :param vf: float, the welding speed in mm/min
@@ -142,11 +117,15 @@ def calculate_multi_layer_height(number_of_layers, alpha_beta_combination, vf):
 
     c_dir = "krinke_model_reduced_coefficients/"
     h_single = evaluate(alpha_beta_combination = alpha_beta_combination,
+                        alpha = alpha,
+                        beta = beta,
                         speed                  = vf,
                         coefficient_file       = c_dir + "single_heights_model_coefficients.csv",
                         min_max_file           = c_dir + "single_heights_xyz_min_max.csv")
 
     k_ratios = evaluate(alpha_beta_combination = alpha_beta_combination,
+                        alpha = alpha,
+                        beta = beta,
                         speed                  = vf,
                         coefficient_file       = c_dir + "k_ratios_model_coefficients.csv",
                         min_max_file           = c_dir + "k_ratios_xyz_min_max.csv")
@@ -156,12 +135,8 @@ def calculate_multi_layer_height(number_of_layers, alpha_beta_combination, vf):
 
 if __name__ == "__main__":
 
-    train("training_set/output.xlsx", "single_heights")
-    train("training_set/output.xlsx", "double_heights")
-    train("training_set/output.xlsx", "k_ratios")
-
     # just using the model ---
-    print(calculate_multi_layer_height(3, 1, 300))
+    print(calculate_multi_layer_height(number_of_layers=1, alpha_beta_combination=3, alpha=90, beta=55, vf=300))
 
     # training the model yourself ----
     c, m, (x, y, z) = train("training_set/output.xlsx", "single_heights")
