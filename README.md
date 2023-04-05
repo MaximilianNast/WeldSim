@@ -1,5 +1,5 @@
 # WeldSim
-This repository contains 3 of the Models discussed in a 2023 research paper titled "Modell zur Berechnung der
+This repository contains 2 of the Models discussed in a 2023 research paper titled "Modell zur Berechnung der
 Schweißraupenhöhen beim mehrlagigen Drahtauftragschweißen zur Anwendung für die additive Fertigung (WAAM)", as well
 as an in-code comparison of the results.
 
